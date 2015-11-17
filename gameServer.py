@@ -1,4 +1,8 @@
-from serverClass import Server
+import time
+from snakeChan import SnakeChan
 
-server = Server(3100)
-server.listen()
+serveur = SnakeChan(3100)
+while 1:
+	data = serveur.receive(0.1)
+	if data != None:
+		print data
