@@ -23,7 +23,7 @@ class SnakeChan:
 
 	def send(self, data, addr=0):
 		com = self.connections[self.clientsIndex(addr)]
-		if (com.isConnected):
+		if (com.etat == 2):
 			self.socket.sendto(pack('I', com.req) + data, com.addr)
 			com.req += 1
 		else:
@@ -44,7 +44,7 @@ class SnakeChan:
 			bytes = unpack('I', data[0:4])
 			bytes = bytes[0]
 			data = data[4:]
-			if com.isConnected and bytes != 0xFFFFFFFF:
+			if com.etat==2 and bytes != 0xFFFFFFFF:
 				if bytes > com.ind:
 					com.ind += 1
 					if data == "ping":
@@ -75,7 +75,6 @@ class SnakeChan:
 				if data[1] == str(com.tokenB) and data[3] == str(self.Pnum):#Si la reponse correspond a la logique protocolaire...
 					self.send("Connected " + str(com.tokenB), com.addr)#Envoi la confirmation de connection au client
 					com.etat = 2#Passe l'etat du client a connecte
-					com.isConnected = True
 					com.compteur = 0
 			else:
 				if com.compteur >2:
@@ -86,16 +85,14 @@ class SnakeChan:
 		elif com.etat == 2:
 			if com.compteur > 2:
 				com.etat = 0
-				com.isConnected =False
 			else:
 				com.compteur += 1
 
 	def connect(self, addr):
 		self.connections.append(dataConnection(addr, 1))
 		com = self.connections[self.clientsIndex(addr)]
-		com.pendingRequest = False
-		while (com.isConnected == False):
-			while(com.pendingRequest==False):#Temps qu'on a pas de reponse satisfesante du serveur, on renverra le message
+		while com.etat !=2:
+			while com.etat==0:#Temps qu'on a pas de reponse satisfesante du serveur, on renverra le message
 				com.tokenA = randint(0,0xFFFFFFFF) #Generation du premier token
 				self.send("GetToken " + str(com.tokenA) + " Snake", com.addr)#Envoi le premier token
 				data = self.receive(1)
@@ -104,26 +101,26 @@ class SnakeChan:
 					if data[2] == str(com.tokenA): #On verifie que la logique protocolaire ai ete respecte
 						com.tokenB = data[1] #On recupere le token B
 						com.Pnum = data[3] #On recupere le Pnum
-						com.pendingRequest=True #On va pouvoir avancer
+						com.etat = 1 #On va pouvoir avancer
 						self.send("Connect " + ("/challenge/"+ com.tokenB + "/protocol/" + com.Pnum), com.addr) #Envoi la reponse du challenge
-			while com.isConnected == False: #Temps qu'on a pas de reponse satisfesante du serveur, on revoi le message
+			while com.etat == 1: #Temps qu'on a pas de reponse satisfesante du serveur, on revoi le message
 			   data = self.receive(0.6)
 			   if data != None:
 			   	data = data.split(" ", 2)#On split les data
 			   	if data[0] == "Connected" and data[1] == str(com.tokenB):#On verifie que la logique protocolaire ai ete respecte
-			   		com.isConnected = True#On va pouvoir avancer
+			   		com.etat = 2#On va pouvoir avancer
 			   		com.compteur = 0
 			   		continue
 			   	else:
 			   		if com.compteur>3:
-			   			com.pendingRequest = False
-			   			com.isConnected = False
+			   			com.compteur = 0
+			   			com.etat = 0
 			   			break
 			   		else:
 			   			com.compteur += 1
 			   if com.compteur>3:
-			   	com.pendingRequest = False
-			   	com.isConnected = False
+			   	com.compteur = 0
+			   	com.etat = 0
 			   	break
 			   else:
 			   	com.compteur += 1
@@ -134,7 +131,6 @@ class dataConnection: #Contient les donnes pour chaque client
 		self.etat = 0
 		self.tokenA = None
 		self.tokenB = None
-		self.isConnected = False
 		self.Pnum = None
 		self.compteur = 0
 		self.req = 1
