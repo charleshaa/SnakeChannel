@@ -34,7 +34,7 @@ time.sleep(1)
 
 print color.BOLD + "test system under pressur" +color.END
 print "10 clients trying to connect with a loss rate of 20%, a delay of 500ms and a corruption of 10% (may take up to one minute)..."
-for x in xrange(0,10):
+for x in xrange(1,11):
   time.sleep(1)
   client = SnakeChan()
   os.system("sudo tc qdisc add dev lo root netem loss 20% delay 500 corrupt 10%")
@@ -43,8 +43,8 @@ for x in xrange(0,10):
   client.send("ping")
   data = client.receive(0)
   if data[0] == "ok":
-    print color.GREEN + "ok" + color.END
+    print color.GREEN + "client",x,"is ok" + color.END
   else:
-    print color.RED + "error" + color.END
+    print color.RED + "client",x,"error" + color.END
 
 os.system("pkill -9 python")
