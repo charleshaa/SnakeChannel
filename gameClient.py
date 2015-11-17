@@ -1,5 +1,8 @@
 import time
-from clientClass import Client
+from snakeChan import SnakeChan
 
-
-client = Client("Carlos", 3100)
+client = SnakeChan()
+client.connect(("127.0.0.1", 3100))
+client.send("ping")
+data = client.receive(0)
+print data
