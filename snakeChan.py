@@ -6,29 +6,38 @@ from random import randint
 
 class SnakeChan:
 
-	def __init__(self, port=0, Pnum=0):
+	def __init__(self, ip = 0, port=0, Pnum=0):
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.connections = []
 		self.Pnum = 19
 		self.port = port
-		if port != 0:
-			self.socket.bind(("127.0.0.1", port))
+		self.ip = ip
+		if self.port != 0 and self.ip !=0:
+			self.socket.bind((ip, port))
 
-
-	def clientsIndex(self, addr): #Retourne l'index du client dans clients[] en fonction de son tuple addresse (-1 si non trouve)
+	#############################
+	#Retourne l'index du client dans clients[] en fonction de son tuple addresse (-1 si non trouve)
+	#############################
+	def clientsIndex(self, addr): 
 		for index, dataConnection in enumerate(self.connections):
 			if dataConnection.addr == addr:
 				return index
 		return -1
 
-	def send(self, data, addr=0):
+	#############################
+	#send permet d'envoyer des data a l'addresse voulu (le port est determine automatiquement)
+	#############################
+	def send(self, data, addr):
 		com = self.connections[self.clientsIndex(addr)]
 		if (com.etat == 2):
 			self.socket.sendto(pack('I', com.req) + data, com.addr)
 			com.req += 1
 		else:
-			self.socket.sendto(pack('I', 0xFFFFFFFF) + data, addr)
+			self.socket.sendto(pack('I', 0xFFFFFFFF) + data, com.addr)
 
+	#############################
+	#Receive est bloquant, elle prend un parametre qui permet de definir un timeout
+	#############################
 	def receive(self, time=0):
 		if time == 0:
 			readable, writable, exceptional = select.select([self.socket], [], [])#Bloquant 1 seconde ou jusqu'a ce que le socket ai recu des data
@@ -49,6 +58,7 @@ class SnakeChan:
 					com.ind += 1
 					if data == "ping":
 						self.send("ok", com.addr)
+						return data
 					else:
 						return (data, com.addr)
 			else:
@@ -59,6 +69,9 @@ class SnakeChan:
 						return data
 		return None
 
+	##############
+	#Machine d'etat permetant d'accepter une connection
+	##############
 	def acceptConnection(self, com, data):
 		if com.etat == 0:
 			data = data.split(" ") #On split les data
@@ -88,6 +101,9 @@ class SnakeChan:
 			else:
 				com.compteur += 1
 
+	##############
+	#Machine d'etat permetant de se connecter
+	##############
 	def connect(self, addr):
 		self.connections.append(dataConnection(addr, 1))
 		com = self.connections[self.clientsIndex(addr)]
@@ -111,13 +127,6 @@ class SnakeChan:
 			   		com.etat = 2#On va pouvoir avancer
 			   		com.compteur = 0
 			   		continue
-			   	else:
-			   		if com.compteur>3:
-			   			com.compteur = 0
-			   			com.etat = 0
-			   			break
-			   		else:
-			   			com.compteur += 1
 			   if com.compteur>3:
 			   	com.compteur = 0
 			   	com.etat = 0
