@@ -1,8 +1,9 @@
 import time
 from snakeChan import SnakeChan
+from snakePost import SnakePost
 
-serveur = SnakeChan(3100)
+serveur = SnakePost(SnakeChan('127.0.0.1', 3100))
 while 1:
-	data = serveur.receive(0)
-	if data != None:
-		print data
+	data = serveur.listen()
+	if data[0] == "ping":
+		serveur.sendSecure("ok", data[1])
