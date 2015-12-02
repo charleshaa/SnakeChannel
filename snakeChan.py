@@ -27,7 +27,7 @@ class SnakeChan:
 	#############################
 	#send permet d'envoyer des data a l'addresse voulu (le port est determine automatiquement)
 	#############################
-	def send(self, data, addr):
+	def sendto(self, data, addr):
 		com = self.connections[self.clientsIndex(addr)]
 		if (com.etat == 2):
 			self.socket.sendto(pack('I', com.req) + data, com.addr)
@@ -39,10 +39,7 @@ class SnakeChan:
 	#Receive est bloquant, elle prend un parametre qui permet de definir un timeout
 	#############################
 	def receive(self, time=0):
-		if time == 0:
-			readable, writable, exceptional = select.select([self.socket], [], [])#Bloquant 1 seconde ou jusqu'a ce que le socket ai recu des data
-		else:
-			readable, writable, exceptional = select.select([self.socket], [], [], 1)#Bloquant 1 seconde ou jusqu'a ce que le socket ai recu des data
+		readable, writable, exceptional = select.select([self.socket], [], [], time)#Bloquant X(time) seconde ou jusqu'a ce que le socket ai recu des data
 		for s in readable:
 			data, addr = self.socket.recvfrom(1024) #On recupere les data
 
@@ -57,7 +54,7 @@ class SnakeChan:
 				if bytes > com.ind:
 					com.ind += 1
 					if data == "ping":
-						self.send("ok", com.addr)
+						self.sendto("ok", com.addr)
 						return data
 					else:
 						return (data, com.addr)
@@ -67,7 +64,7 @@ class SnakeChan:
 						self.acceptConnection(com, data)
 					else:
 						return data
-		return None
+		return None, None
 
 	##############
 	#Machine d'etat permetant d'accepter une connection
@@ -79,14 +76,14 @@ class SnakeChan:
 				com.tokenA = data[1]
 				com.etat=1
 				com.tokenB = randint(0, 0xFFFFFFFF)#On genere un token B
-				self.send("Token " + str(com.tokenB)+" "+str(com.tokenA)+" "+str(self.Pnum), com.addr)#On envoi ce token
+				self.sendto("Token " + str(com.tokenB)+" "+str(com.tokenA)+" "+str(self.Pnum), com.addr)#On envoi ce token
 		elif com.etat == 1:
 			data = data.split(" ") #On split les data
 			if data[0] == "Connect":
 				data = data[1].split("/")#Formate les data
 				del data[0]#idem
 				if data[1] == str(com.tokenB) and data[3] == str(self.Pnum):#Si la reponse correspond a la logique protocolaire...
-					self.send("Connected " + str(com.tokenB), com.addr)#Envoi la confirmation de connection au client
+					self.sendto("Connected " + str(com.tokenB), com.addr)#Envoi la confirmation de connection au client
 					com.etat = 2#Passe l'etat du client a connecte
 					com.compteur = 0
 			else:
@@ -110,7 +107,7 @@ class SnakeChan:
 		while com.etat !=2:
 			while com.etat==0:#Temps qu'on a pas de reponse satisfesante du serveur, on renverra le message
 				com.tokenA = randint(0,0xFFFFFFFF) #Generation du premier token
-				self.send("GetToken " + str(com.tokenA) + " Snake", com.addr)#Envoi le premier token
+				self.sendto("GetToken " + str(com.tokenA) + " Snake", com.addr)#Envoi le premier token
 				data = self.receive(1)
 				if data != None:
 					data = data.split(" ", 4) #On split les data
@@ -118,7 +115,7 @@ class SnakeChan:
 						com.tokenB = data[1] #On recupere le token B
 						com.Pnum = data[3] #On recupere le Pnum
 						com.etat = 1 #On va pouvoir avancer
-						self.send("Connect " + ("/challenge/"+ com.tokenB + "/protocol/" + com.Pnum), com.addr) #Envoi la reponse du challenge
+						self.sendto("Connect " + ("/challenge/"+ com.tokenB + "/protocol/" + com.Pnum), com.addr) #Envoi la reponse du challenge
 			while com.etat == 1: #Temps qu'on a pas de reponse satisfesante du serveur, on revoi le message
 			   data = self.receive(0.6)
 			   if data != None:
