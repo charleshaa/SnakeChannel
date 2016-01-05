@@ -20,6 +20,7 @@ class color:
 print color.BOLD+"SnakeChan connection"+color.END, 
 
 p = subprocess.Popen("python gameServer.py &", shell=True)
+
 time.sleep(1)
 
 client = SnakeChan()
@@ -43,4 +44,4 @@ while 1:
 time.sleep(1)
 print color.GREEN + "ok" + color.END
 
-os.system("pkill -9 python")
+p.kill()

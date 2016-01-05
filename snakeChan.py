@@ -64,7 +64,7 @@ class SnakeChan:
 						self.acceptConnection(com, data)
 					else:
 						return data
-		return None, None
+		return None
 
 	##############
 	#Machine d'etat permetant d'accepter une connection
@@ -115,21 +115,22 @@ class SnakeChan:
 						com.tokenB = data[1] #On recupere le token B
 						com.Pnum = data[3] #On recupere le Pnum
 						com.etat = 1 #On va pouvoir avancer
-						self.sendto("Connect " + ("/challenge/"+ com.tokenB + "/protocol/" + com.Pnum), com.addr) #Envoi la reponse du challenge
+						self.sendto("Connect " + ("\challenge\\"+ com.tokenB + "\protocol\\" + com.Pnum), com.addr) #Envoi la reponse du challenge
 			while com.etat == 1: #Temps qu'on a pas de reponse satisfesante du serveur, on revoi le message
-			   data = self.receive(0.6)
-			   if data != None:
-			   	data = data.split(" ", 2)#On split les data
-			   	if data[0] == "Connected" and data[1] == str(com.tokenB):#On verifie que la logique protocolaire ai ete respecte
-			   		com.etat = 2#On va pouvoir avancer
-			   		com.compteur = 0
-			   		continue
-			   if com.compteur>3:
-			   	com.compteur = 0
-			   	com.etat = 0
-			   	break
-			   else:
-			   	com.compteur += 1
+				data = self.receive(1)
+				print data
+				if data != None:
+					data = data.split(" ", 2)#On split les data
+					if data[0] == "Connected" and data[1] == str(com.tokenB):#On verifie que la logique protocolaire ai ete respecte
+				   		com.etat = 2#On va pouvoir avancer
+				   		com.compteur = 0
+				   		continue
+				if com.compteur>3:
+					com.compteur = 0
+					com.etat = 0
+					break
+				else:
+					com.compteur += 1
 
 class dataConnection: #Contient les donnes pour chaque client
 	def __init__(self, addr, type):
